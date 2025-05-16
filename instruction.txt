@@ -1,0 +1,8 @@
+Run:
+$env:testing = "false"; go run ./cmd/main.go
+
+Test:
+$env:testing = "true"; go test ./... -coverprofile=coverage
+
+Generate coverage HTML:
+go tool cover -html=coverage -o coverage.html

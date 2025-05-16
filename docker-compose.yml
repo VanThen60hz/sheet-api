@@ -1,0 +1,25 @@
+version: "0.1"
+
+services:
+    personnel-api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: personnel-api
+        ports:
+            - "8080:8080"
+        volumes:
+            - ./credentials.json:/app/credentials.json
+            - ./token.json:/app/token.json
+            - ./spreadsheetID.txt:/app/spreadsheetID.txt
+            - ./policy.csv:/app/policy.csv
+            - ./model.conf:/app/model.conf
+        environment:
+            - TZ=Asia/Ho_Chi_Minh
+        restart: unless-stopped
+        networks:
+            - personnel-network
+
+networks:
+    personnel-network:
+        driver: bridge

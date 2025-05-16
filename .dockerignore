@@ -1,0 +1,12 @@
+.git
+.gitignore
+README.md
+coverage
+coverage.html
+*.md
+*.txt
+!spreadsheetID.txt
+!credentials.json
+!token.json
+!policy.csv
+!model.conf 

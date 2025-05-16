@@ -1,0 +1,989 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>create: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">personnel-api/pkg/api/create/Create.go (97.2%)</option>
+				
+				<option value="file1">personnel-api/pkg/api/delete/Delete.go (96.2%)</option>
+				
+				<option value="file2">personnel-api/pkg/api/read/Read.go (92.2%)</option>
+				
+				<option value="file3">personnel-api/pkg/api/update/Update.go (95.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package create
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "personnel-api/pkg/api/read"
+        "personnel-api/pkg/svc"
+
+        "google.golang.org/api/sheets/v4"
+)
+
+/*
+POST
+Body: {"spreadsheetID": "YOUR_SPREAD_SHEET_ID", "sheetName": "SHEET_NAME", "rows":[ ["3", "test1", "test1@gmail.com"], ["4", "test2", "test2@gmail.com"] ]}
+*/
+
+// check for valid length of input not included (each data in rows has to match what is in the sheet)
+func CreateData(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req struct {
+                SpreadsheetID string          `json:"spreadsheetID"`
+                SheetName     string          `json:"sheetName"`
+                Rows          [][]interface{} `json:"rows"`
+        }
+
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID := req.SpreadsheetID
+        if spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sheetName := req.SheetName
+        if sheetName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">dataRange, _, _ := read.GetSheetDataHelper(spreadsheetID, sheetName)
+        dataRange = sheetName + "!" + dataRange
+
+        rows := req.Rows
+        if len(rows) == 0 </span><span class="cov8" title="1">{
+                http.Error(w, "rows data field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">err = CreateDataHelper(spreadsheetID, dataRange, rows)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Cannot create new rows in sheet", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fmt.Fprint(w, "Insert successfully!")</span>
+}
+
+func CreateDataHelper(spreadsheetID string, dataRange string, rows [][]interface{}) error <span class="cov8" title="1">{
+        service, err := svc.SetupGoogleSheetsService()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">valueRange := &amp;sheets.ValueRange{
+                Values: rows,
+        }
+
+        _, err = service.Spreadsheets.Values.Append(spreadsheetID, dataRange, valueRange).ValueInputOption("USER_ENTERED").Do()
+        if err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package delete
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "personnel-api/pkg/api/read"
+        "personnel-api/pkg/svc"
+        "strconv"
+        "strings"
+
+        "google.golang.org/api/sheets/v4"
+)
+
+/*
+DELETE
+Body: {
+                "spreadsheetID": "YOUR_SPREAD_SHEET_ID",
+                "sheetName": "SHEET_NAME",
+                "range": [3, 4]
+          }
+*/
+
+func DeleteDataRow(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req struct {
+                SpreadsheetID string        `json:"spreadsheetID"`
+                SheetName     string        `json:"sheetName"`
+                Range         []interface{} `json:"range"`
+        }
+
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID := req.SpreadsheetID
+        if spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sheetName := req.SheetName
+        if sheetName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">dataRange := req.Range
+        if len(dataRange) == 0 </span><span class="cov8" title="1">{
+                http.Error(w, "range field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">err = DeleteDataRowHelper(spreadsheetID, sheetName, dataRange)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Cannot delete the rows requested", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fmt.Fprint(w, "Delete successfully!")</span>
+}
+
+func DeleteDataRowHelper(spreadsheetID string, sheetName string, dataRange []interface{}) error <span class="cov8" title="1">{
+        service, err := svc.SetupGoogleSheetsService()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">columnRange, _, _ := read.GetSheetDataHelper(spreadsheetID, sheetName)
+        arr := strings.Split(columnRange, ":")
+        request := &amp;sheets.ClearValuesRequest{}
+
+        for i := range dataRange </span><span class="cov8" title="1">{
+                rowNum := dataRange[i].(string)
+                rowRange := sheetName + "!" + arr[0] + rowNum + ":" + arr[1] + rowNum
+
+                _, err := service.Spreadsheets.Values.Clear(spreadsheetID, rowRange, request).Do()
+                if err != nil </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+/*
+DELETE
+
+        Body: {
+                                "spreadsheetID": "YOUR_SPREAD_SHEET_ID",
+                                "sheetName": "SHEET_NAME",
+                                "range": [["4", "1"], ["5", "2"]]
+                          }
+*/
+func DeleteDataCell(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req struct {
+                SpreadsheetID string          `json:"spreadsheetID"`
+                SheetName     string          `json:"sheetName"`
+                Range         [][]interface{} `json:"range"`
+        }
+
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID := req.SpreadsheetID
+        if spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sheetName := req.SheetName
+        if sheetName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">dataRange := req.Range
+        if len(dataRange) == 0 </span><span class="cov8" title="1">{
+                http.Error(w, "range field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">err = DeleteDataCellHelper(spreadsheetID, sheetName, dataRange)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Cannot delete the rows requested", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fmt.Fprint(w, "Delete successfully!")</span>
+}
+
+func DeleteDataCellHelper(spreadsheetID string, sheetName string, dataRange [][]interface{}) error <span class="cov8" title="1">{
+        service, err := svc.SetupGoogleSheetsService()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">request := &amp;sheets.ClearValuesRequest{}
+
+        for _, pos := range dataRange </span><span class="cov8" title="1">{
+                row := pos[0].(string)
+                col_int, err := strconv.Atoi(pos[1].(string))
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">col := read.ColumnIndexToLetter(col_int)
+                rowRange := sheetName + "!" + col + row + ":" + col + row
+
+                _, err = service.Spreadsheets.Values.Clear(spreadsheetID, rowRange, request).Do()
+                if err != nil </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package read
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "personnel-api/pkg/svc"
+        "strconv"
+        "strings"
+)
+
+// GET
+// Body: {"spreadsheetID": "YOUR_SPREAD_SHEET_ID"}
+func GetAll(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req map[string]string
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID, ok := req["spreadsheetID"]
+        if !ok || spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">allData, err := GetAllHelper(spreadsheetID)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, fmt.Sprintf("Failed to retrieve data from all sheets: %v", err), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">dataJSON, err := json.Marshal(allData)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to convert data to JSON", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.Write(dataJSON)</span>
+}
+
+func GetAllHelper(spreadsheetID string) ([]interface{}, error) <span class="cov8" title="1">{
+        service, err := svc.SetupGoogleSheetsService()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">spreadsheet, err := service.Spreadsheets.Get(spreadsheetID).Do()
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to retrieve spreadsheet: %v", err)
+        }</span>
+        <span class="cov8" title="1">var allData []interface{}
+
+        for _, sheet := range spreadsheet.Sheets </span><span class="cov8" title="1">{
+                _, sheetData, err := GetSheetDataHelper(spreadsheetID, sheet.Properties.Title)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to retrieve sheet data: %v", err)
+                }</span>
+
+                <span class="cov8" title="1">allData = append(allData, sheetData)</span>
+        }
+        <span class="cov8" title="1">return allData, nil</span>
+}
+
+// GET
+// Body: {"spreadsheetID": "YOUR_SPREAD_SHEET_ID", "sheetName": "SHEET_NAME"}
+func GetSheetData(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req map[string]string
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID, ok := req["spreadsheetID"]
+        if !ok || spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sheetName, ok := req["sheetName"]
+        if !ok || sheetName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov8" title="1">_, data, err := GetSheetDataHelper(spreadsheetID, sheetName)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "failed to retrieve data from sheet", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">dataJSON, err := json.Marshal(data)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to convert data to JSON", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.Write(dataJSON)</span>
+}
+
+func GetSheetDataHelper(spreadsheetID string, sheetName string) (string, []interface{}, error) <span class="cov8" title="1">{
+        service, err := svc.SetupGoogleSheetsService()
+        if err != nil </span><span class="cov0" title="0">{
+                return "", nil, err
+        }</span>
+
+        <span class="cov8" title="1">spreadsheet, err := service.Spreadsheets.Values.Get(spreadsheetID, sheetName).Do()
+        if err != nil </span><span class="cov8" title="1">{
+                return "", nil, fmt.Errorf("failed to retrieve spreadsheet: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">var allData []interface{}
+
+        if len(spreadsheet.Values) == 0 </span><span class="cov8" title="1">{
+                return "", allData, nil
+        }</span>
+
+        <span class="cov8" title="1">startRow := 0
+        startColumn := 0
+
+        if len(spreadsheet.Values) &gt; 0 </span><span class="cov8" title="1">{
+                for i, row := range spreadsheet.Values </span><span class="cov8" title="1">{
+                        if len(row) &gt; 0 </span><span class="cov8" title="1">{
+                                startRow = i
+                                break</span>
+                        }
+                }
+
+                <span class="cov8" title="1">if startRow &gt; 0 </span><span class="cov0" title="0">{
+                        for j, value := range spreadsheet.Values[startRow] </span><span class="cov0" title="0">{
+                                if value != nil &amp;&amp; value != "" </span><span class="cov0" title="0">{
+                                        startColumn = j
+                                        break</span>
+                                }
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">data := spreadsheet.Values[startRow:]
+        for i, row := range data </span><span class="cov8" title="1">{
+                data[i] = row[startColumn:]
+        }</span>
+        <span class="cov8" title="1">allData = append(allData, data)
+
+        dataRange := ColumnIndexToLetter(startColumn) + ":" + ColumnIndexToLetter(startColumn+len(data[0])-1)
+        return dataRange, allData, nil</span>
+}
+
+func ColumnIndexToLetter(index int) string <span class="cov8" title="1">{
+        var result string
+        for </span><span class="cov8" title="1">{
+                result = string(rune('A'+(index%26))) + result
+                if index /= 26; index &lt;= 0 </span><span class="cov8" title="1">{
+                        break</span>
+                }
+        }
+        <span class="cov8" title="1">return result</span>
+}
+
+// GET
+// Body: {"spreadsheetID": "YOUR_SPREAD_SHEET_ID", "sheetName": "SHEET_NAME", "columnName": "COLUMN_NAME"}
+func GetByColumn(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req map[string]string
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID, ok := req["spreadsheetID"]
+        if !ok || spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sheetName, ok := req["sheetName"]
+        if !ok || sheetName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov8" title="1">columnName, ok := req["columnName"]
+        if !ok || columnName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov8" title="1">_, data, err := GetByColumnHelper(spreadsheetID, sheetName, columnName)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "cannot extract column data", http.StatusInternalServerError)
+        }</span>
+
+        <span class="cov8" title="1">dataJSON, err := json.Marshal(data)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to convert data to JSON", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.Write(dataJSON)</span>
+}
+
+func GetByColumnHelper(spreadsheetID string, sheetName string, columnName string) (int, []interface{}, error) <span class="cov8" title="1">{
+        _, sheetData, err := GetSheetDataHelper(spreadsheetID, sheetName)
+        if err != nil </span><span class="cov8" title="1">{
+                return -1, nil, fmt.Errorf("failed to retrieve spreadsheet data: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">columnIdx := -1
+
+        for i, name := range sheetData[0].([][]interface{})[0] </span><span class="cov8" title="1">{
+                if name == columnName </span><span class="cov8" title="1">{
+                        columnIdx = i
+                        break</span>
+                }
+        }
+
+        <span class="cov8" title="1">if columnIdx == -1 </span><span class="cov8" title="1">{
+                return -1, nil, fmt.Errorf("no column found with that name: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">var allData []interface{}
+        for _, row := range sheetData </span><span class="cov8" title="1">{
+                for _, item := range row.([][]interface{}) </span><span class="cov8" title="1">{
+                        if len(item) == 0 || len(item) &lt;= columnIdx </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">allData = append(allData, item[columnIdx])</span>
+                }
+        }
+
+        <span class="cov8" title="1">return columnIdx, allData, nil</span>
+}
+
+// GET
+// Body: {"spreadsheetID": "YOUR_SPREAD_SHEET_ID", "sheetName": "SHEET_NAME", "columnName": "COLUMN_NAME", "operator": "OP", "value": "VALUE"}
+func GetByFilter(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req map[string]string
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID, ok := req["spreadsheetID"]
+        if !ok || spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sheetName, ok := req["sheetName"]
+        if !ok || sheetName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov8" title="1">columnName, ok := req["columnName"]
+        if !ok || columnName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov8" title="1">operator, ok := req["operator"]
+        if !ok || operator == "" </span><span class="cov8" title="1">{
+                http.Error(w, "operator field is required", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov8" title="1">value, ok := req["value"]
+        if !ok || value == "" </span><span class="cov8" title="1">{
+                http.Error(w, "value field is required", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov8" title="1">filteredData, err := GetByFilterHelper(spreadsheetID, sheetName, columnName, operator, value)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "cannot filter column data", http.StatusInternalServerError)
+        }</span>
+
+        <span class="cov8" title="1">dataJSON, err := json.Marshal(filteredData)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to convert data to JSON", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.Write(dataJSON)</span>
+}
+
+func GetByFilterHelper(spreadsheetID string, sheetName string, columnName string, operator string, value string) ([]interface{}, error) <span class="cov8" title="1">{
+        _, sheetData, err := GetSheetDataHelper(spreadsheetID, sheetName)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to retrieve sheet data: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">columnIdx, columnData, err := GetByColumnHelper(spreadsheetID, sheetName, columnName)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to retrieve column data: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">dataType := 0
+        valueType := 0
+
+        var filteredData []interface{}
+        subList, ok := sheetData[0].([][]interface{})
+        if ok </span><span class="cov8" title="1">{
+                columnTitle := subList[0]
+                filteredData = append(filteredData, columnTitle)
+
+        }</span>
+
+        <span class="cov8" title="1">if len(columnData) &lt;= 1 </span><span class="cov0" title="0">{
+                return filteredData, nil
+        }</span> else<span class="cov8" title="1"> {
+                dataType, err = CheckStringType(columnData[1].(string))
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("unknown type: %v", err)
+                }</span>
+                <span class="cov8" title="1">valueType, err = CheckStringType(value)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("unknown type: %v", err)
+                }</span>
+                <span class="cov8" title="1">if dataType != 3 &amp;&amp; valueType != dataType </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("incorrect value type: %v", err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">for _, cell := range sheetData[0].([][]interface{})[1:] </span><span class="cov8" title="1">{
+                if len(cell) == 0 || len(cell) &lt;= columnIdx </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">if dataType == 1 </span><span class="cov8" title="1">{
+                        valueInt, _ := strconv.Atoi(value)
+                        cellInt, _ := strconv.Atoi(cell[columnIdx].(string))
+
+                        switch operator </span>{
+                        case "=":<span class="cov8" title="1">
+                                if cellInt == valueInt </span><span class="cov8" title="1">{
+                                        filteredData = append(filteredData, cell)
+                                }</span>
+                        case "&gt;":<span class="cov8" title="1">
+                                if cellInt &gt; valueInt </span><span class="cov8" title="1">{
+                                        filteredData = append(filteredData, cell)
+                                }</span>
+                        case "&lt;":<span class="cov8" title="1">
+                                if cellInt &lt; valueInt </span><span class="cov8" title="1">{
+                                        filteredData = append(filteredData, cell)
+                                }</span>
+                        default:<span class="cov8" title="1">
+                                return nil, fmt.Errorf("unsupported operator: %s", operator)</span>
+                        }
+                } else<span class="cov8" title="1"> if dataType == 2 </span><span class="cov8" title="1">{
+                        valueFloat, _ := strconv.ParseFloat(value, 64)
+                        cellFloat, _ := strconv.ParseFloat(cell[columnIdx].(string), 64)
+                        switch operator </span>{
+                        case "=":<span class="cov8" title="1">
+                                if cellFloat == valueFloat </span><span class="cov8" title="1">{
+                                        filteredData = append(filteredData, cell)
+                                }</span>
+                        case "&gt;":<span class="cov8" title="1">
+                                if cellFloat &gt; valueFloat </span><span class="cov8" title="1">{
+                                        filteredData = append(filteredData, cell)
+                                }</span>
+                        case "&lt;":<span class="cov8" title="1">
+                                if cellFloat &lt; valueFloat </span><span class="cov8" title="1">{
+                                        filteredData = append(filteredData, cell)
+                                }</span>
+                        default:<span class="cov8" title="1">
+                                return nil, fmt.Errorf("unsupported operator: %s", operator)</span>
+                        }
+                } else<span class="cov8" title="1"> {
+                        switch operator </span>{
+                        case "contain":<span class="cov8" title="1">
+                                if strings.Contains(cell[columnIdx].(string), value) </span><span class="cov8" title="1">{
+                                        filteredData = append(filteredData, cell)
+                                }</span>
+                        default:<span class="cov8" title="1">
+                                return nil, fmt.Errorf("unsupported operator: %s", operator)</span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">return filteredData, nil</span>
+}
+
+func CheckStringType(value string) (int, error) <span class="cov8" title="1">{
+        if _, err := strconv.Atoi(value); err == nil </span><span class="cov8" title="1">{
+                return 1, nil
+        }</span>
+
+        <span class="cov8" title="1">if _, err := strconv.ParseFloat(value, 64); err == nil </span><span class="cov8" title="1">{
+                return 2, nil
+        }</span>
+
+        <span class="cov8" title="1">return 3, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package update
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "personnel-api/pkg/api/read"
+        "personnel-api/pkg/svc"
+
+        "google.golang.org/api/sheets/v4"
+)
+
+/*
+PUT
+Body: {
+                "spreadsheetID": "YOUR_SPREAD_SHEET_ID",
+                "sheetName": "SHEET_NAME",
+                "rows":[ ["3", "test1", "test1@gmail.com"], ["4", "test2", "test2@gmail.com"]],
+                "range": [row1, row2, ...]
+          }
+*/
+// check for valid length of input not included (rows and range has to match length)
+func UpdateDataRow(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req struct {
+                SpreadsheetID string          `json:"spreadsheetID"`
+                SheetName     string          `json:"sheetName"`
+                Rows          [][]interface{} `json:"rows"`
+                Range         []interface{}   `json:"range"`
+        }
+
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID := req.SpreadsheetID
+        if spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sheetName := req.SheetName
+        if sheetName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">rows := req.Rows
+        if len(rows) == 0 </span><span class="cov8" title="1">{
+                http.Error(w, "rows data field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">dataRange := req.Range
+        if len(dataRange) == 0 </span><span class="cov8" title="1">{
+                http.Error(w, "range field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">err = UpdateDataRowHelper(spreadsheetID, sheetName, dataRange, rows)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Cannot update the rows requested", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fmt.Fprint(w, "Update successfully!")</span>
+}
+
+func UpdateDataRowHelper(spreadsheetID string, sheetName string, dataRange []interface{}, rows [][]interface{}) error <span class="cov8" title="1">{
+        service, err := svc.SetupGoogleSheetsService()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">columnRange, _, err := read.GetSheetDataHelper(spreadsheetID, sheetName)
+        if err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="1">arr := strings.Split(columnRange, ":")
+
+        for i, row := range rows </span><span class="cov8" title="1">{
+                valueRange := &amp;sheets.ValueRange{
+                        Values: [][]interface{}{row},
+                }
+
+                rowNum := dataRange[i].(string)
+                rowRange := sheetName + "!" + arr[0] + rowNum + ":" + arr[1] + rowNum
+
+                _, err := service.Spreadsheets.Values.Update(spreadsheetID, rowRange, valueRange).ValueInputOption("USER_ENTERED").Do()
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+/*
+PUT
+
+        Body: {
+                        "spreadsheetID": "YOUR_SPREAD_SHEET_ID",
+                        "sheetName": "SHEET_NAME",
+                        "cells":["test5", "test5@gmail.com"],
+                        "range": [["4", "1"], ["5", "2"]]
+                  }
+*/
+//No type check yet
+func UpdateDataCell(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req struct {
+                SpreadsheetID string          `json:"spreadsheetID"`
+                SheetName     string          `json:"sheetName"`
+                Cells         []interface{}   `json:"cells"`
+                Range         [][]interface{} `json:"range"`
+        }
+
+        err = json.Unmarshal(body, &amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">spreadsheetID := req.SpreadsheetID
+        if spreadsheetID == "" </span><span class="cov8" title="1">{
+                http.Error(w, "spreadsheetID field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sheetName := req.SheetName
+        if sheetName == "" </span><span class="cov8" title="1">{
+                http.Error(w, "sheetName field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">cells := req.Cells
+        if len(cells) == 0 </span><span class="cov8" title="1">{
+                http.Error(w, "cells data field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">dataRange := req.Range
+        if len(dataRange) == 0 </span><span class="cov8" title="1">{
+                http.Error(w, "range field is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">err = UpdateDataCellHelper(spreadsheetID, sheetName, cells, dataRange)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Cannot update the cells requested", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">fmt.Fprint(w, "Update successfully!")</span>
+}
+
+func UpdateDataCellHelper(spreadsheetID string, sheetName string, cells []interface{}, dataRange [][]interface{}) error <span class="cov8" title="1">{
+        service, err := svc.SetupGoogleSheetsService()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">for i, pos := range dataRange </span><span class="cov8" title="1">{
+                row := pos[0].(string)
+                col_int, err := strconv.Atoi(pos[1].(string))
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">col := read.ColumnIndexToLetter(col_int)
+                rowRange := sheetName + "!" + col + row + ":" + col + row
+
+                cell_data := cells[i]
+                valueRange := &amp;sheets.ValueRange{
+                        Values: [][]interface{}{{cell_data}},
+                }
+
+                _, err = service.Spreadsheets.Values.Update(spreadsheetID, rowRange, valueRange).ValueInputOption("USER_ENTERED").Do()
+                if err != nil </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
